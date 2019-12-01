@@ -8,6 +8,5 @@
       , clojerl
       ]
     }
-  , {mod, {'advent.app', []}}
   ]
 }.
