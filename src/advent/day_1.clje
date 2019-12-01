@@ -1,0 +1,14 @@
+(ns advent.day-1
+  (:require [advent.utils :as u]))
+
+(defn mass->fuel [mass]
+  (-> mass
+      (/ 3)
+      (erlang/trunc)
+      (- 2)))
+
+(defn part-one []
+  (->> (u/input-for-day 1)
+       (map erlang/binary_to_integer.1)
+       (map mass->fuel)
+       (reduce +)))

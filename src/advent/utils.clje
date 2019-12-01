@@ -1,0 +1,10 @@
+(ns advent.utils
+  (:require [clojure.string :as str]))
+
+(defn input-for-day [n]
+  (let [priv-dir (code/priv_dir :advent)
+        path     (-> priv-dir
+                     (filename/join (str "day-" n ".input"))
+                     str)]
+    (-> (slurp path)
+        (str/split "\n"))))
