@@ -12,3 +12,16 @@
        (map erlang/binary_to_integer.1)
        (map mass->fuel)
        (reduce +)))
+
+(defn mass+fuel->fuel [mass]
+  (loop [total (mass->fuel mass)
+         m (mass->fuel total)]
+    (if (pos? m)
+      (recur (+ total m) (mass->fuel m))
+      total)))
+
+(defn part-two []
+  (->> (u/input-for-day 1)
+       (map erlang/binary_to_integer.1)
+       (map mass+fuel->fuel)
+       (reduce +)))
