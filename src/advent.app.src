@@ -1,0 +1,13 @@
+{ application, 'advent'
+, [ {vsn, git}
+  , {description, "A Clojerl application"}
+  , {modules, []}
+  , { applications
+    , [ stdlib
+      , kernel
+      , clojerl
+      ]
+    }
+  , {mod, {'advent.app', []}}
+  ]
+}.
