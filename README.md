@@ -1,19 +1,20 @@
 advent
 =====
 
+Starting a REPL and running the solution for day 1, part one:
 
+    $ rebar3 clojerl repl
+    ===> Verifying dependencies...
+    ===> Compiling advent
+    ===> Clojerl Compiling clojerl
+    ===> Clojerl Compiling advent
+    %%% Compiling advent/day_1.clje...
+    Clojure 0.5.1
+    clje.user=> (advent.day-1/part-one)
+    3389778
+    clje.user=>
 
-Build
------
+For any other day replace 1 with `n` and for running part two
+just call `(advent.day-n/part-two)`.
 
-    $ rebar3 compile
-
-Start a REPL
-----
-
-   $ rebar3 clojerl repl
-
-Run Clojerl test
-----
-
-   $ rebar3 clojerl test
+Input files are stored under the `priv` folder.
