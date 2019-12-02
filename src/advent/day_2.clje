@@ -1,0 +1,40 @@
+(ns advent.day-2
+  (:require [advent.utils :as u]))
+
+(defn add
+  [pc program]
+  (let [[_ x y z] (subvec program pc (+ pc 4))]
+    (assoc program z (+ (program x)
+                        (program y)))))
+
+(defn multiply
+  [pc program]
+  (let [[_ x y z] (subvec program pc (+ pc 4))]
+    (assoc program z (* (program x)
+                        (program y)))))
+
+(def opcode->fn
+  {1  add
+   2  multiply
+   99 :halt})
+
+(defn compute
+  [pc program]
+  (let [op (program pc)
+        f  (opcode->fn op)]
+    (prn pc op f program)
+    (cond
+      (= f :halt)
+      program
+
+      f
+      (compute (+ pc 4) (f pc program))
+
+      :else
+      (throw [:invalid_op op]))))
+
+
+(defn part-one []
+  (->> (u/input-for-day 2)
+       (map erlang/binary_to_integer.1)
+       (reduce +)))
