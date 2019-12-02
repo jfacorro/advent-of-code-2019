@@ -3,47 +3,62 @@
             [clojure.string :as str]))
 
 (defn add
-  [pc program]
+  [program pc]
   (let [[_ x y z] (subvec program pc (+ pc 4))]
     (assoc program z (+ (program x)
                         (program y)))))
 
 (defn multiply
-  [pc program]
+  [program pc]
   (let [[_ x y z] (subvec program pc (+ pc 4))]
     (assoc program z (* (program x)
                         (program y)))))
 
 (def opcode->fn
-  {1  add
-   2  multiply
-   99 :halt})
+  {1  [add 4]
+   2  [multiply 4]
+   99 [:halt 0]})
 
 (defn compute
-  [pc program]
+  [program pc]
   (let [op (program pc)
-        f  (opcode->fn op)]
+        [f instr-count] (opcode->fn op)]
     (cond
       (= f :halt)
       program
 
       f
-      (compute (+ pc 4) (f pc program))
+      (compute (f program pc) (+ pc instr-count))
 
       :else
       (throw [:invalid_op op]))))
 
-
 (defn program-corrections
-  [program]
+  [program noun verb]
   (-> program
-      (assoc 1 12)
-      (assoc 2 2)))
+      (assoc 1 noun)
+      (assoc 2 verb)))
+
+(defn input []
+  (mapv erlang/binary_to_integer.1
+        (-> (u/input-for-day 2)
+            first
+            (str/split ","))))
 
 (defn part-one []
-  (->> (-> (u/input-for-day 2)
-           first
-           (str/split ","))
-       (mapv erlang/binary_to_integer.1)
-       (program-corrections)
-       (compute 0)))
+  (-> (input)
+      (program-corrections 12 2)
+      (compute 0)))
+
+(defn part-two []
+  (let [mem (input)
+        pairs (for [noun (range 0 100)
+                    verb (range 0 100)]
+                [noun verb])]
+    (loop [[[n v] & xs] pairs]
+      (let [result (-> mem
+                       (program-corrections n v)
+                       (compute 0))]
+        (if (= (result 0) 19690720)
+          [[n v] (+ v (* 100 n))]
+          (recur xs))))))
