@@ -1,5 +1,6 @@
 (ns advent.day-2
-  (:require [advent.utils :as u]))
+  (:require [advent.utils :as u]
+            [clojure.string :as str]))
 
 (defn add
   [pc program]
@@ -22,7 +23,6 @@
   [pc program]
   (let [op (program pc)
         f  (opcode->fn op)]
-    (prn pc op f program)
     (cond
       (= f :halt)
       program
@@ -34,7 +34,16 @@
       (throw [:invalid_op op]))))
 
 
+(defn program-corrections
+  [program]
+  (-> program
+      (assoc 1 12)
+      (assoc 2 2)))
+
 (defn part-one []
-  (->> (u/input-for-day 2)
-       (map erlang/binary_to_integer.1)
-       (reduce +)))
+  (->> (-> (u/input-for-day 2)
+           first
+           (str/split ","))
+       (mapv erlang/binary_to_integer.1)
+       (program-corrections)
+       (compute 0)))
