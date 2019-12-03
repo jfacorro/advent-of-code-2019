@@ -1,0 +1,56 @@
+(ns advent.day-3
+  (:require [advent.utils :as u]
+            [clojure.string :as str]
+            [clojure.set :as set]))
+
+(defn* parse-move
+  "Uses pattern matching to extract the direction
+  character and then the steps"
+  [#bin[[dir-str :type :binary :size 1]
+        [steps-str :type :binary]]]
+  [(case dir-str
+      "D" :down
+      "U" :up
+      "L" :left
+      "R" :right)
+   (erlang/binary_to_integer steps-str)])
+
+(defn parse-input
+  [input]
+  (->> input
+       (map #(str/split % ","))
+       (map #(map parse-move %))))
+
+(defn positions
+  [[x y] [dir steps]]
+  (let [[axis low high step] (case dir
+                          :down  [:y (inc y) (+ y steps 1) 1]
+                          :up    [:y (dec y) (- y steps 1) -1]
+                          :left  [:x (dec x) (- x steps 1) -1]
+                          :right [:x (inc x) (+ x steps 1) 1])]
+    (if (= axis :y)
+      (for [y' (range low high step)] [x y'])
+      (for [x' (range low high step)] [x' y]))))
+
+(defn path
+  [origin moves]
+  (loop [current origin
+         path []
+         [move & moves] moves]
+    (if move
+      (let [segment (positions current move)
+            path (concat path segment)
+            current (last segment)]
+        (recur current path moves))
+      path)))
+
+(defn find-crossings
+  [moves-1 moves-2]
+  (let [path-1 (set (path [0 0] moves-1))
+        path-2 (set (path [0 0] moves-2))]
+    (set/intersection path-1 path-2)))
+
+(defn part-one
+  []
+  (let [[moves-1 moves-2] (parse-input (u/input-for-day 3))]
+    (find-crossings moves-1 moves-2)))
