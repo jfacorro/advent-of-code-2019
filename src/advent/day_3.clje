@@ -45,15 +45,41 @@
       path)))
 
 (defn find-crossings
-  [moves-1 moves-2]
-  (let [path-1 (set (path [0 0] moves-1))
-        path-2 (set (path [0 0] moves-2))]
+  [path-1 path-2]
+  (let [path-1 (set path-1)
+        path-2 (set path-2)]
     (set/intersection path-1 path-2)))
 
 (defn part-one
   []
-  (let [[moves-1 moves-2] (parse-input (u/input-for-day 3))]
-    (->> (find-crossings moves-1 moves-2)
+  (let [[moves-1 moves-2] (parse-input (u/input-for-day 3))
+        path-1 (path [0 0] moves-1)
+        path-2 (path [0 0] moves-2)]
+    (->> (find-crossings path-1 path-2)
          (map (fn [[w h]] (+ (erlang/abs w) (erlang/abs h))))
          sort
          first)))
+
+(defn path-length [path end]
+  (loop [[x & xs] path
+         length 1]
+    (if (or (nil? x) (= x end))
+      length
+      (recur xs (inc length)))))
+
+(defn crossing-distance
+  [path-1 path-2 crossing]
+  (+ (path-length path-1 crossing)
+     (path-length path-2 crossing)))
+
+(defn part-two
+  ([] (part-two (u/input-for-day 3)))
+  ([input]
+   (let [[moves-1 moves-2] (parse-input input)
+         path-1 (path [0 0] moves-1)
+         path-2 (path [0 0] moves-2)
+         crossings (find-crossings path-1 path-2)]
+     (->> crossings
+          (map #(crossing-distance path-1 path-2 %))
+          sort
+          first))))
