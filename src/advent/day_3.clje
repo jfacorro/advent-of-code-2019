@@ -29,8 +29,8 @@
                           :left  [:x (dec x) (- x steps 1) -1]
                           :right [:x (inc x) (+ x steps 1) 1])]
     (if (= axis :y)
-      (for [y' (range low high step)] [x y'])
-      (for [x' (range low high step)] [x' y]))))
+      (mapv #(vector x %) (range low high step))
+      (mapv #(vector % y) (range low high step)))))
 
 (defn path
   [origin moves]
@@ -53,4 +53,7 @@
 (defn part-one
   []
   (let [[moves-1 moves-2] (parse-input (u/input-for-day 3))]
-    (find-crossings moves-1 moves-2)))
+    (->> (find-crossings moves-1 moves-2)
+         (map (fn [[w h]] (+ (erlang/abs w) (erlang/abs h))))
+         sort
+         first)))
