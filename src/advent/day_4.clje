@@ -31,3 +31,25 @@
                              equal-adjacent?)
                  explode-num)
            (range lower (inc higher)))))
+
+(defn equal-adjacent-only-two?
+  [digits]
+  (loop [[x & xs] (rest digits)
+         current (first digits)
+         n 1]
+    (cond
+      (not x) (= n 2)
+      (= x current) (recur xs x (inc n))
+      (> n 1) (if (= n 2)
+                true
+                (recur xs x 1))
+      :else (recur xs x 1))))
+
+(defn part-two
+  ([]
+   (part-two input))
+  ([[lower higher]]
+   (filter (comp (every-pred never-decreasing?
+                             equal-adjacent-only-two?)
+                 explode-num)
+           (range lower (inc higher)))))
