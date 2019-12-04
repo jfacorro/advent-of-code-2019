@@ -27,4 +27,7 @@
   ([]
    (part-one input))
   ([[lower higher]]
-   (filter (comp (every-pred never-decreasing? equal-adjacent?) explode-num) (range lower (inc higher)))))
+   (filter (comp (every-pred never-decreasing?
+                             equal-adjacent?)
+                 explode-num)
+           (range lower (inc higher)))))
