@@ -2,7 +2,7 @@
   (:require [advent.utils :as u]
             [clojure.string :as str]))
 
-(defn arg
+(defn arg-val
   "Resolves what the argument should be based on the mode"
   [[n mode] program]
   (case mode
@@ -12,33 +12,68 @@
 ;; Operations
 
 (defn add
-  [[x y [z _]] program]
-  (assoc program
-         z
-         (+ (arg x program)
-            (arg y program))))
+  [[x y [z _]] program ip]
+  [(assoc program
+          z
+          (+ (arg-val x program)
+             (arg-val y program)))
+   (+ ip 4)])
 
 (defn multiply
-  [[x y [z _]] program]
-  (assoc program
-         z
-         (* (arg x program)
-            (arg y program))))
+  [[x y [z _]] program ip]
+  [(assoc program
+           z
+           (* (arg-val x program)
+              (arg-val y program)))
+   (+ ip 4)])
 
 (defn input
-  [[[dest _]] program]
-  (assoc program dest (read)))
+  [[[dest _]] program ip]
+  (print "Input: ")
+  [(assoc program dest (read))
+   (+ ip 2)])
 
 (defn output
-  [[from] program]
-  (prn (arg from program))
-  program)
+  [[from] program ip]
+  (println "Output: " (arg-val from program))
+  [program
+   (+ ip 2)])
+
+(defn jump-if-true
+  [[x y] program ip]
+  [program
+   (if-not (zero? (arg-val x program))
+     (arg-val y program)
+     (+ ip 3))])
+
+(defn jump-if-false
+  [[x y] program ip]
+  [program
+   (if (zero? (arg-val x program))
+     (arg-val y program)
+     (+ ip 3))])
+
+(defn less-than
+  [[x y [z _]] program ip]
+  (let [res (if (< (arg-val x program) (arg-val y program)) 1 0)]
+    [(assoc program z res)
+     (+ ip 4)]))
+
+(defn equals
+  [[x y [z _]] program ip]
+  (let [res (if (= (arg-val x program) (arg-val y program)) 1 0)]
+    [(assoc program z res)
+     (+ ip 4)]))
 
 (def op-code->fn
   {1  [add 3]
    2  [multiply 3]
    3  [input 1]
    4  [output 1]
+   5  [jump-if-true 2]
+   6  [jump-if-false 2]
+   7  [less-than 3]
+   8  [equals 3]
    99 [:halt 0]})
 
 (defn digits
@@ -64,27 +99,28 @@
         (range (count args))))
 
 (defn next-instr
-  [program pc]
-  (let [instr (program pc)
+  [program ip]
+  (let [instr (program ip)
         [op-code & modes] (digits instr)
         [f arity] (op-code->fn op-code)
-        args (subvec program (inc pc) (+ pc arity 1))]
+        args (subvec program (inc ip) (+ ip arity 1))]
     {:op-code op-code
      :f f
      :arity arity
      :args (build-args (vec args) (vec modes))}))
 
 (defn apply-instr
-  [{:keys [f args]} program]
-  (f args program))
+  [{:keys [f args]} program ip]
+  (f args program ip))
 
 (defn compute
-  [program pc]
-  (let [instr (next-instr program pc)]
+  [program ip]
+  (let [instr (next-instr program ip)]
     (condp = (:f instr)
       :halt program
       nil   (throw [:invalid_op (:op-code instr)])
-      (recur (apply-instr instr program) (+ pc (:arity instr) 1)))))
+      (let [[program ip] (apply-instr instr program ip)]
+        (recur program ip)))))
 
 (defn parse-input
   []
