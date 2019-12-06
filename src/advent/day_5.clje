@@ -25,13 +25,9 @@
          (* (arg x program)
             (arg y program))))
 
-(defn read-input
-  []
-  (prn :read-input))
-
 (defn input
   [[[dest _]] program]
-  (assoc program dest (read-input)))
+  (assoc program dest (read)))
 
 (defn output
   [[from] program]
@@ -41,6 +37,8 @@
 (def op-code->fn
   {1  [add 3]
    2  [multiply 3]
+   3  [input 1]
+   4  [output 1]
    99 [:halt 0]})
 
 (defn digits
@@ -82,7 +80,6 @@
 
 (defn compute
   [program pc]
-  (prn program pc)
   (let [instr (next-instr program pc)]
     (condp = (:f instr)
       :halt program
