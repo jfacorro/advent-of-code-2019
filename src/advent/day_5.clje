@@ -1,0 +1,102 @@
+(ns advent.day-5
+  (:require [advent.utils :as u]
+            [clojure.string :as str]))
+
+(defn arg
+  "Resolves what the argument should be based on the mode"
+  [[n mode] program]
+  (case mode
+    :position (program n)
+    :immediate n))
+
+;; Operations
+
+(defn add
+  [[x y [z _]] program]
+  (assoc program
+         z
+         (+ (arg x program)
+            (arg y program))))
+
+(defn multiply
+  [[x y [z _]] program]
+  (assoc program
+         z
+         (* (arg x program)
+            (arg y program))))
+
+(defn read-input
+  []
+  (prn :read-input))
+
+(defn input
+  [[[dest _]] program]
+  (assoc program dest (read-input)))
+
+(defn output
+  [[from] program]
+  (prn (arg from program))
+  program)
+
+(def op-code->fn
+  {1  [add 3]
+   2  [multiply 3]
+   99 [:halt 0]})
+
+(defn digits
+  "Extracts digits in a vector. The first two digits
+  are interpreted as a single number."
+  ([n]
+   (digits (erlang/div n 100) [(rem n 100)]))
+  ([n digits]
+   (if (pos? n)
+     (recur (erlang/div n 10)
+            (conj digits (rem n 10)))
+     digits)))
+
+(defn build-args
+  "Build pairs of [n mode] where `n` is the integer
+  provided as the arguemnt and mode is either
+  `:position` or `:immediate`"
+  [args modes]
+  (mapv #(vector (args %)
+                 (case (nth modes % 0)
+                   0 :position
+                   1 :immediate))
+        (range (count args))))
+
+(defn next-instr
+  [program pc]
+  (let [instr (program pc)
+        [op-code & modes] (digits instr)
+        [f arity] (op-code->fn op-code)
+        args (subvec program (inc pc) (+ pc arity 1))]
+    {:op-code op-code
+     :f f
+     :arity arity
+     :args (build-args (vec args) (vec modes))}))
+
+(defn apply-instr
+  [{:keys [f args]} program]
+  (f args program))
+
+(defn compute
+  [program pc]
+  (prn program pc)
+  (let [instr (next-instr program pc)]
+    (condp = (:f instr)
+      :halt program
+      nil   (throw [:invalid_op (:op-code instr)])
+      (recur (apply-instr instr program) (+ pc (:arity instr) 1)))))
+
+(defn parse-input
+  []
+  (mapv erlang/binary_to_integer.1
+        (-> (u/input-for-day 5)
+            first
+            (str/split ","))))
+
+(defn part-one
+  ([] (part-one (parse-input)))
+  ([program]
+   (compute program 0)))
