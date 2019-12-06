@@ -1,0 +1,44 @@
+(ns advent.day-6
+  (:require [advent.utils :as u]
+            [clojure.string :as str]))
+
+(defn direct-orbit
+  [k m]
+  (if (m k) 1 0))
+
+(defn indirect-orbits
+  ([k m] (indirect-orbits k m -1))
+  ([k m c]
+   (if-let [j (m k)]
+     (recur j m (inc c))
+     c)))
+
+(defn build-orbit-map
+  ([pairs] (build-orbit-map pairs {}))
+  ([[[x y :as pair] & xs] m]
+   (if pair
+     (recur xs (assoc m y x))
+     m)))
+
+(defn parse-input
+  []
+  (->> (u/input-for-day 6)
+       (mapv #(str/split % "\\)"))))
+
+(defn part-one
+  ([] (part-one (parse-input)))
+  ([pairs]
+   (let [m (build-orbit-map pairs)]
+     (prn m)
+     (->> (keys m)
+          (map (fn [k]
+                 (+ (direct-orbit k m)
+                    (indirect-orbits k m))))
+          (reduce +)))))
+
+(comment
+  (part-one [[:com :b] [:b :c] [:c :d]
+             [:d :e] [:e :f] [:b :g]
+             [:g :h] [:d :i] [:e :j]
+             [:j :k] [:k :l]]) ;;=42
+  )
