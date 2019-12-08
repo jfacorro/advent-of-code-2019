@@ -29,13 +29,12 @@
 
 (defn input
   [[[dest _]] program ip]
-  (print "Input: ")
   [(assoc program dest (read))
    (+ ip 2)])
 
 (defn output
   [[from] program ip]
-  (println "Output: " (arg-val from program))
+  (println (arg-val from program))
   [program
    (+ ip 2)])
 
