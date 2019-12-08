@@ -1,0 +1,43 @@
+(ns advent.test.day-6
+  (:require [clojure.test :refer :all]
+            [advent.day-6 :refer :all]))
+
+(def example-part-one
+  ["COM)B"
+   "B)C"
+   "C)D"
+   "D)E"
+   "E)F"
+   "B)G"
+   "G)H"
+   "D)I"
+   "E)J"
+   "J)K"
+   "K)L"])
+
+(deftest test-part-one
+  (testing "Run example for part 1"
+    (is (= 42 (-> example-part-one
+                  parse-input
+                  part-one)))))
+
+(def example-part-two
+  ["COM)B"
+   "B)C"
+   "C)D"
+   "D)E"
+   "E)F"
+   "B)G"
+   "G)H"
+   "D)I"
+   "E)J"
+   "J)K"
+   "K)L"
+   "K)YOU"
+   "I)SAN"])
+
+(deftest test-part-two
+  (testing "Run exmaple for part 2"
+    (is (= 4 (-> example-part-two
+                 parse-input
+                 part-two)))))
