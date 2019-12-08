@@ -1,6 +1,7 @@
 (ns advent.day-6
   (:require [advent.utils :as u]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.set :as set]))
 
 (defn direct-orbit
   [k m]
@@ -13,6 +14,14 @@
      (recur j m (inc c))
      c)))
 
+(defn orbits
+  "Returns a map"
+  ([k m] (orbits k m {} 1))
+  ([k m result dist]
+   (if-let [j (m k)]
+     (recur j m (assoc result j dist) (inc dist))
+     result)))
+
 (defn build-orbit-map
   ([pairs] (build-orbit-map pairs {}))
   ([[[x y :as pair] & xs] m]
@@ -21,24 +30,29 @@
      m)))
 
 (defn parse-input
-  []
-  (->> (u/input-for-day 6)
-       (mapv #(str/split % "\\)"))))
+  ([] (parse-input (u/input-for-day 6)))
+  ([lines]
+   (mapv #(str/split % "\\)") lines)))
 
 (defn part-one
   ([] (part-one (parse-input)))
   ([pairs]
    (let [m (build-orbit-map pairs)]
-     (prn m)
      (->> (keys m)
           (map (fn [k]
                  (+ (direct-orbit k m)
                     (indirect-orbits k m))))
           (reduce +)))))
 
-(comment
-  (part-one [[:com :b] [:b :c] [:c :d]
-             [:d :e] [:e :f] [:b :g]
-             [:g :h] [:d :i] [:e :j]
-             [:j :k] [:k :l]]) ;;=42
-  )
+(defn part-two
+  ([] (part-two (parse-input)))
+  ([pairs]
+   (let [m (build-orbit-map pairs)
+         you (orbits "YOU" m)
+         san (orbits "SAN" m)
+         common (set/intersection (-> you keys set)
+                                  (-> san keys set))]
+     (->> common
+          (map (fn [planet] (+ (you planet) (san planet) -2)))
+          sort
+          first))))
