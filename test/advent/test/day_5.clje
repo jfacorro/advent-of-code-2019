@@ -8,6 +8,7 @@
 (deftest test-part-one
   (testing "Examples for part 1"
     (are [program int-code] (-> (compute program 0)
+                                :program
                                 (nth 4)
                                 (= int-code))
       [1002,4,3,4,33] 99

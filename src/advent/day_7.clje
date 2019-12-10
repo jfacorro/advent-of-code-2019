@@ -53,8 +53,91 @@
 (def all-settings-part-two
   (all-settings [5 6 7 8 9]))
 
+(def connections
+  {:a :b
+   :b :c
+   :c :d
+   :d :e
+   :e :a})
+
+(defn read-fn []
+  (receive* x x))
+
+(defn amplifier-compute
+  [{:keys [id program next-amp parent] :as state}]
+  (day-5/with-write-fn #(do
+                          (erlang/send parent #erl[:out %])
+                          (erlang/send next-amp %))
+    (day-5/with-read-fn read-fn
+      (day-5/compute program 0))))
+
+(defn amplifier-loop
+  "Main loop for the amplifier process. Waits for the message
+  that indicates what is the next amplifier and when to start
+  the computation."
+  [state]
+  (receive*
+    #erl[:next-amp next-amp]
+    (recur (assoc state :next-amp next-amp))
+
+    :start
+    (do
+      (amplifier-compute state)
+      (erlang/send (state :parent) :done))
+
+    x
+    (do
+      (prn x)
+      (recur state))))
+
 (defn spawn-amplifier
-  [program setting read-fn write-fn]
-  (day-5/compute program 0
-                 :read read-fn
-                 :write write-fn))
+  [id parent program]
+  (erlang/spawn #(amplifier-loop {:id id
+                                  :parent parent
+                                  :program program})))
+
+(defn connect-amplifiers
+  [out in]
+  (erlang/send in #erl[:next-amp out]))
+
+(defn start-amplifier
+  [amp]
+  (erlang/send amp :start))
+
+(defn run-feeback-loop
+  [program settings]
+  ;; (println "Settings" settings)
+  (let [amps-count (count settings)
+        self (erlang/self)
+        amps (mapv #(spawn-amplifier % self program) (range amps-count))]
+    ;; Connect all amplifiers
+    (doseq [[x y] (-> (partition 2 1 amps)
+                      ;; Feedback loop
+                      (conj [(last amps) (first amps)]))]
+      ;; (println "Connecting" x "and" y )
+      (connect-amplifiers x y))
+    ;; Start and send the setting
+    (doseq [[amp setting] (map vector amps settings)]
+      (start-amplifier amp)
+      ;; Send the first input (i.e. the setting value)
+      (erlang/send amp setting))
+    ;; Send the first input for the first amplifier
+    (erlang/send (first amps) 0)
+
+    ;; Collect output from all amplifiers and wait for all to finish
+    (loop [finished 0
+           output []]
+      (if (= finished amps-count)
+        (last output)
+        (receive*
+          :done (recur (inc finished) output)
+          #erl[:out x] (recur finished (conj output x)))))))
+
+(defn part-two
+  ([] (-> (u/input-for-day 7)
+          input->program
+          part-two))
+  ([program]
+   (->> all-settings-part-two
+        (mapv #(run-feeback-loop program %))
+        (apply max))))

@@ -2,6 +2,10 @@
   (:require [advent.utils :as u]
             [clojure.string :as str]))
 
+
+(def ^:dynamic *read-fn* read)
+(def ^:dynamic *write-fn* println)
+
 (defn arg-val
   "Resolves what the argument should be based on the mode"
   [[n mode] program]
@@ -29,12 +33,12 @@
 
 (defn input
   [[[dest _]] program ip]
-  [(assoc program dest (read))
+  [(assoc program dest (*read-fn*))
    (+ ip 2)])
 
 (defn output
   [[from] program ip]
-  (println (arg-val from program))
+  (*write-fn* (arg-val from program))
   [program
    (+ ip 2)])
 
@@ -112,11 +116,21 @@
   [{:keys [f args]} program ip]
   (f args program ip))
 
+(defmacro with-read-fn
+  [read-fn & body]
+  `(binding [*read-fn* ~read-fn]
+     ~@body))
+
+(defmacro with-write-fn
+  [write-fn & body]
+  `(binding [*write-fn* ~write-fn]
+     ~@body))
+
 (defn compute
   [program ip]
   (let [instr (next-instr program ip)]
     (condp = (:f instr)
-      :halt program
+      :halt {:program program :ip ip}
       nil   (throw [:invalid_op (:op-code instr)])
       (let [[program ip] (apply-instr instr program ip)]
         (recur program ip)))))
