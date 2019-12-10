@@ -1,0 +1,35 @@
+(ns advent.day-8
+  (:require [advent.utils :as u]
+            [clojure.string :as str]))
+
+
+(defn input->digits
+  [input]
+  (->> (seq input)
+       (mapv erlang/binary_to_integer.1)))
+
+(defn parse-input
+  []
+  (-> (u/input-for-day 8)
+      first
+      input->digits))
+
+(defn digits->layers
+  [digits w h]
+  (->> digits
+       (partition (* w h))
+       (mapv #(->> % (partition w) (mapv vec)))))
+
+(defn calc-result
+  [freqs]
+  (* (freqs 1 0) (freqs 2 0)))
+
+(defn part-one
+  ([]  (part-one (parse-input) 25 6))
+  ([digits w h]
+   (->> (digits->layers digits w h)
+        (map flatten)
+        (map frequencies)
+        (sort-by (fn [freqs] (freqs 0)))
+        first
+        calc-result)))

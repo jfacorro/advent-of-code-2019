@@ -1,0 +1,19 @@
+(ns advent.test.day-8
+  (:require [clojure.test :refer :all]
+            [advent.day-8 :refer :all]))
+
+(deftest test-part-one
+  (testing "Run examples for part 1"
+    (are [result w h digits] (= result (part-one digits w h))
+      2 2 2 [1 0
+             2 0
+
+             1 1
+             0 2]
+      9 3 3 [1 0 2
+             0 1 1
+             0 2 0
+
+             0 0 0
+             1 1 1
+             2 2 2])))
