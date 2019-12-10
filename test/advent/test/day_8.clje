@@ -3,7 +3,7 @@
             [advent.day-8 :refer :all]))
 
 (deftest test-part-one
-  (testing "Run examples for part 1"
+  (testing "Examples for part 1"
     (are [result w h digits] (= result (part-one digits w h))
       2 2 2 [1 0
              2 0
@@ -17,3 +17,8 @@
              0 0 0
              1 1 1
              2 2 2])))
+
+(deftest test-part-two
+  (testing "Examples for part 2"
+    (are [result w h digits] (= result (part-two digits w h))
+      [[0 1] [1 0]] 2 2 [0 2 2 2 1 1 2 2 2 2 1 2 0 0 0 0])))
