@@ -83,12 +83,8 @@
     :start
     (do
       (amplifier-compute state)
-      (erlang/send (state :parent) :done))
-
-    x
-    (do
-      (prn x)
-      (recur state))))
+      ;; Signal this amplifier is done
+      (erlang/send (state :parent) :done))))
 
 (defn spawn-amplifier
   [id parent program]
@@ -128,6 +124,8 @@
     (loop [finished 0
            output []]
       (if (= finished amps-count)
+        ;; Return the last ouput received
+        ;; it will be from the last amplifier
         (last output)
         (receive*
           :done (recur (inc finished) output)
