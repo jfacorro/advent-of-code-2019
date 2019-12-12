@@ -22,8 +22,8 @@
   [[x y] [w z]]
   (let [dx (- w x)
         dy (- z y)
-        step-x (step (- w x))
-        step-y (step (- z y))
+        step-x (step dx)
+        step-y (step dy)
         pos    (cond
                  (zero? dx) (for [y' (range y z step-y)]
                               [x y'])
@@ -71,11 +71,14 @@
      (reduce (fn [visibility x]
                (if (= (get-pos map x) "#")
                  (->> all-pos
+                      ;;  Filter the ones that are visibile
                       (filter #(and
                                 (= (get-pos map %) "#")
                                 (visible? map x %)))
                       count
+                      ;; Don't count itself
                       dec
+                      ;; Add result in accumulator
                       (assoc visibility x))
                  visibility))
              {}
@@ -86,8 +89,10 @@
    (part-one (-> (u/input-for-day 10)
                  input->map)))
   ([map]
-   (->> map
-        calculate-visibility
+   (->> (calculate-visibility map)
+        ;; Sort by the count
         (sort-by second)
+        ;; Fetch the last pair (highest count)
         last
+        ;; Get only the count
         second)))
