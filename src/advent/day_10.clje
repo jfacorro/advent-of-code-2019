@@ -22,8 +22,8 @@
   [[x y] [w z]]
   (let [dx (- w x)
         dy (- z y)
-        step-x (step (- w x))
-        step-y (step (- z y))
+        step-x (step dx)
+        step-y (step dy)
         pos    (cond
                  (zero? dx) (for [y' (range y z step-y)]
                               [x y'])
@@ -40,23 +40,27 @@
          (mapv coords->int))))
 
 (defn get-pos
-  [map [x y]]
-  (get-in map [y x]))
+  [map-chart [x y]]
+  (get-in map-chart [y x]))
+
+(defn set-pos
+  [map-chart [x y] v]
+  (assoc-in map-chart [y x] v))
 
 (defn visible?
-  [map orig dest]
+  [map-chart orig dest]
   (->> (line-of-sight orig dest)
-       (clojure.core/map #(get-pos map %))
+       (map #(get-pos map-chart %))
        (not-any? #(= "#" %))))
 
-(defn input->map
+(defn input->map-chart
   [input]
   (mapv #(vec (seq %)) input))
 
 (defn dimensions
   "Returns the dimensions (width and height) of the map"
-  [map]
-  [(-> map first count) (count map)])
+  [map-chart]
+  [(-> map-chart first count) (count map-chart)])
 
 (defn all-positions
   "Calculates and returns a list of all positions
@@ -65,17 +69,19 @@
   (for [x (range w) y (range h)] [x y]))
 
 (defn calculate-visibility
-  [map]
-  (let [[w h] (dimensions map)
+  [map-chart]
+  (let [[w h] (dimensions map-chart)
          all-pos (all-positions w h)]
      (reduce (fn [visibility x]
-               (if (= (get-pos map x) "#")
+               (if (= (get-pos map-chart x) "#")
                  (->> all-pos
-                      (filter #(and
-                                (= (get-pos map %) "#")
-                                (visible? map x %)))
+                      ;;  Filter the ones that are visibile
+                      (filter #(and (= (get-pos map-chart %) "#")
+                                    (visible? map-chart x %)))
                       count
+                      ;; Don't count itself
                       dec
+                      ;; Add result in accumulator
                       (assoc visibility x))
                  visibility))
              {}
@@ -84,10 +90,78 @@
 (defn part-one
   ([]
    (part-one (-> (u/input-for-day 10)
-                 input->map)))
-  ([map]
-   (->> map
-        calculate-visibility
+                 input->map-chart)))
+  ([map-chart]
+   (->> (calculate-visibility map-chart)
+        ;; Sort by the count
         (sort-by second)
+        ;; Fetch the last pair (highest count)
         last
+        ;; Get only the count
         second)))
+
+;; Part two
+
+(def two-pi (* 2 (math/pi)))
+
+(defn angle
+  "Calculates the angle from the initial position
+  using the following quarters.
+
+       |
+    IV | I
+  -----------
+   III | II
+       |
+  "
+  [[x y] [w z]]
+  (let [dx (- w x)
+        dy (- y z)]
+    (let [angle (math/atan2 dx dy)]
+      (if (neg? angle)
+        (+ two-pi angle)
+        angle))))
+
+(defn all-visible
+  [map-chart from candidates]
+  (filter #(visible? map-chart from %) candidates))
+
+(defn vaporize-asteroids
+  ([map-chart from candidates]
+   (vaporize-asteroids map-chart from candidates []))
+  ([map-chart from candidates asteroids]
+   (if (empty? candidates)
+     asteroids
+     (let [visible (->> candidates
+                        (all-visible map-chart from)
+                        (sort-by #(angle from %)))
+           ;; Vaporize the visible one
+           map-chart  (reduce #(set-pos %1 %2 ".")
+                              map-chart
+                              visible)
+           candidates (reduce disj candidates visible)
+           ;; Add the vaporized in the order calculated
+           ;; by angle
+           asteroids (reduce conj asteroids visible)]
+       (recur map-chart from candidates asteroids)))))
+
+(defn coord->result
+  [[x y]]
+  (+ y (* 100 x)))
+
+(defn part-two
+  ([]
+   (part-two (-> (u/input-for-day 10)
+                 input->map)
+             [13 17]
+             200))
+  ([map-chart from pos]
+   (let [[w h] (dimensions map-chart)
+         candidates (->> (all-positions w h)
+                         (filter #(= (get-pos map-chart %) "#"))
+                         set)
+         candidates (disj candidates from)]
+     (-> map-chart
+         (vaporize-asteroids from candidates)
+         (get (dec pos))
+         coord->result))))
