@@ -1,0 +1,17 @@
+(ns advent.day-9
+  (:require [advent.utils :as u]
+            [advent.day-5 :as day-5]
+            [clojure.string :as str]))
+
+(defn parse-input
+  []
+  (mapv erlang/binary_to_integer.1
+        (-> (u/input-for-day 9)
+            first
+            (str/split ","))))
+
+(defn part-one
+  ([] (part-one (parse-input)))
+  ([program] (day-5/compute program 0)))
+
+;; Part two is running part-one with a different output
