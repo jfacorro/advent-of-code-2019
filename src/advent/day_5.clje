@@ -5,35 +5,44 @@
 
 (def ^:dynamic *read-fn* read)
 (def ^:dynamic *write-fn* println)
+(def ^:dynamic *relative-base-offset* 0)
 
 (defn arg-val
   "Resolves what the argument should be based on the mode"
   [[n mode] program]
   (case mode
     :position (program n)
+    :relative (program (+ *relative-base-offset* n))
     :immediate n))
+
+(defn dir-val
+  [[n mode]]
+  (case mode
+    :position n
+    :relative (+ *relative-base-offset* n)
+    (throw (str "Unexpected mode for memory dir " mode))))
 
 ;; Operations
 
 (defn add
-  [[x y [z _]] program ip]
+  [[x y z] program ip]
   [(assoc program
-          z
+          (dir-val z)
           (+ (arg-val x program)
              (arg-val y program)))
    (+ ip 4)])
 
 (defn multiply
-  [[x y [z _]] program ip]
+  [[x y z] program ip]
   [(assoc program
-           z
-           (* (arg-val x program)
-              (arg-val y program)))
+          (dir-val z)
+          (* (arg-val x program)
+             (arg-val y program)))
    (+ ip 4)])
 
 (defn input
-  [[[dest _]] program ip]
-  [(assoc program dest (*read-fn*))
+  [[dest] program ip]
+  [(assoc program (dir-val dest) (*read-fn*))
    (+ ip 2)])
 
 (defn output
@@ -57,16 +66,21 @@
      (+ ip 3))])
 
 (defn less-than
-  [[x y [z _]] program ip]
+  [[x y z] program ip]
   (let [res (if (< (arg-val x program) (arg-val y program)) 1 0)]
-    [(assoc program z res)
+    [(assoc program (dir-val z) res)
      (+ ip 4)]))
 
 (defn equals
-  [[x y [z _]] program ip]
+  [[x y z] program ip]
   (let [res (if (= (arg-val x program) (arg-val y program)) 1 0)]
-    [(assoc program z res)
+    [(assoc program (dir-val z) res)
      (+ ip 4)]))
+
+(defn adjust-relative-base-offset
+  [[x] program ip]
+  (set! *relative-base-offset* (+ *relative-base-offset* (arg-val x program)))
+  [program (+ ip 2)])
 
 (def op-code->fn
   {1  [add 3]
@@ -77,6 +91,7 @@
    6  [jump-if-false 2]
    7  [less-than 3]
    8  [equals 3]
+   9  [adjust-relative-base-offset 1]
    99 [:halt 0]})
 
 (defn digits
@@ -98,7 +113,8 @@
   (mapv #(vector (args %)
                  (case (nth modes % 0)
                    0 :position
-                   1 :immediate))
+                   1 :immediate
+                   2 :relative))
         (range (count args))))
 
 (defn next-instr
@@ -126,7 +142,7 @@
   `(binding [*write-fn* ~write-fn]
      ~@body))
 
-(defn compute
+(defn do-compute
   [program ip]
   (let [instr (next-instr program ip)]
     (condp = (:f instr)
@@ -134,6 +150,17 @@
       nil   (throw [:invalid_op (:op-code instr)])
       (let [[program ip] (apply-instr instr program ip)]
         (recur program ip)))))
+
+(defn extend-memory
+  [program]
+  (-> program
+      (concat (repeat 1000 0))
+      vec))
+
+(defn compute
+  [program ip]
+  (binding [*relative-base-offset* 0]
+    (do-compute (extend-memory program) ip)))
 
 (defn parse-input
   []

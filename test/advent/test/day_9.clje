@@ -1,0 +1,20 @@
+(ns advent.test.day-9
+  (:require [clojure.test :refer :all]
+            [advent.day-9 :refer :all]
+            [advent.day-5 :as day-5]))
+
+(deftest test-part-one
+  (testing "Examples for part 1"
+    (are [result program] (= result
+                      (with-out-str
+                        (day-5/with-write-fn #(print (str % ","))
+                          (part-one program))))
+      "109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99,"
+      [109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99]
+
+      "1219070632396864,"
+      [1102,34915192,34915192,7,4,7,99,0]
+
+      "1125899906842624,"
+      [104,1125899906842624,99]
+      )))
