@@ -1,0 +1,93 @@
+(ns advent.day-10
+  (:require [advent.utils :as u]
+            [clojure.string :as str]))
+
+(defn step
+  [delta]
+  (if (pos? delta) 1 -1))
+
+(defn int-coords?
+  [[x y]]
+  (and (== (int x) x)
+       (== (int y) y)))
+
+(defn coords->int
+  [[x y]]
+  [(int x) (int y)])
+
+(defn line-of-sight
+  "Return the positions that are in the line of
+  sight, not including the origin and the
+  destination"
+  [[x y] [w z]]
+  (let [dx (- w x)
+        dy (- z y)
+        step-x (step (- w x))
+        step-y (step (- z y))
+        pos    (cond
+                 (zero? dx) (for [y' (range y z step-y)]
+                              [x y'])
+                 (zero? dy) (for [x' (range x w step-x)]
+                              [x' y])
+                 (< dy dx)  (for [y' (range y z step-y)]
+                              [(+ x (/ (* dx (- y' y)) dy)) y'])
+                 (<= dx dy) (for [x' (range x w step-x)]
+                              [x' (+ y (/ (* dy (- x' x)) dx))]))
+        ;; Remove the origin
+        pos (-> pos rest vec)]
+    (->> pos
+         (filter int-coords?)
+         (mapv coords->int))))
+
+(defn get-pos
+  [map [x y]]
+  (get-in map [y x]))
+
+(defn visible?
+  [map orig dest]
+  (->> (line-of-sight orig dest)
+       (clojure.core/map #(get-pos map %))
+       (not-any? #(= "#" %))))
+
+(defn input->map
+  [input]
+  (mapv #(vec (seq %)) input))
+
+(defn dimensions
+  "Returns the dimensions (width and height) of the map"
+  [map]
+  [(-> map first count) (count map)])
+
+(defn all-positions
+  "Calculates and returns a list of all positions
+  for a map of the provided width and height"
+  [w h]
+  (for [x (range w) y (range h)] [x y]))
+
+(defn calculate-visibility
+  [map]
+  (let [[w h] (dimensions map)
+         all-pos (all-positions w h)]
+     (reduce (fn [visibility x]
+               (if (= (get-pos map x) "#")
+                 (->> all-pos
+                      (filter #(and
+                                (= (get-pos map %) "#")
+                                (visible? map x %)))
+                      count
+                      dec
+                      (assoc visibility x))
+                 visibility))
+             {}
+             all-pos)))
+
+(defn part-one
+  ([]
+   (part-one (-> (u/input-for-day 10)
+                 input->map)))
+  ([map]
+   (->> map
+        calculate-visibility
+        (sort-by second)
+        last
+        second)))
