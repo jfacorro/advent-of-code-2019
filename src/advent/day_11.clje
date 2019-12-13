@@ -1,0 +1,87 @@
+(ns advent.day-11
+  (:require [advent.utils :as u]
+            [advent.day-5 :as day-5]
+            [clojure.string :as str]))
+
+(defn read-fn []
+  (receive* #erl[:out x] x))
+
+(defn send-msg [pid x]
+  (erlang/send pid #erl[:out x]))
+
+(defn compute-program
+  [{:keys [parent program]}]
+  (day-5/with-write-fn #(send-msg parent %)
+    (day-5/with-read-fn read-fn
+      (day-5/compute program 0))))
+
+(defn run-program
+  [{:keys [parent] :as state}]
+  (compute-program state)
+  ;; Signal the program is done
+  (send-msg parent :done))
+
+(defn spawn-program
+  [parent program]
+  (erlang/spawn #(run-program {:parent parent
+                               :program program})))
+
+(def BLACK 0)
+(def WHITE 1)
+
+(def LEFT 0)
+(def RIGHT 1)
+
+(def left-rotation
+  {:up :left
+   :left :down
+   :down :right
+   :right :up})
+
+(def right-rotation
+  {:up :right
+   :right :down
+   :down :left
+   :left :up})
+
+(defn rotate [direction rotation]
+  (condp = rotation
+    LEFT  (left-rotation direction)
+    RIGHT (right-rotation direction)))
+
+(defn move [direction [x y]]
+  (case direction
+    :up    [x (dec y)]
+    :left  [(dec x) y]
+    :down  [x (inc y)]
+    :right [(inc x) y]))
+
+(defn input->program
+  [input]
+  (mapv erlang/binary_to_integer.1
+        (-> input
+            first
+            (str/split ","))))
+
+(defn part-one
+  ([] (-> (u/input-for-day 11)
+          input->program
+          part-one))
+  ([program]
+   (let [pid-program (spawn-program (erlang/self) program)]
+     (loop [panels  {}
+            current [0 0]
+            painted #{}
+            direction :up]
+       (let [color         (panels current BLACK)
+             _             (send-msg pid-program color)
+             color-or-done (read-fn)]
+         (if (= color-or-done :done)
+           (count painted)
+           (let [new-color  color-or-done
+                 rotation   (read-fn)
+                 direction' (rotate direction rotation)]
+             (recur (assoc panels current new-color)
+                    (move direction' current)
+                    (conj painted current)
+                    direction'))))))))
