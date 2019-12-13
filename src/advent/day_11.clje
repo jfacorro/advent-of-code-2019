@@ -63,25 +63,84 @@
             first
             (str/split ","))))
 
+(defn paint
+  [pid-program initial-color]
+  (loop [panels  {}
+         current [0 0]
+         direction :up]
+    (let [color         (panels current initial-color)
+          _             (send-msg pid-program color)
+          color-or-done (read-fn)]
+      (if (= color-or-done :done)
+        panels
+        (let [new-color  color-or-done
+              rotation   (read-fn)
+              direction' (rotate direction rotation)]
+          (recur (assoc panels current new-color)
+                 (move direction' current)
+                 direction'))))))
+
 (defn part-one
   ([] (-> (u/input-for-day 11)
           input->program
           part-one))
   ([program]
-   (let [pid-program (spawn-program (erlang/self) program)]
-     (loop [panels  {}
-            current [0 0]
-            painted #{}
-            direction :up]
-       (let [color         (panels current BLACK)
-             _             (send-msg pid-program color)
-             color-or-done (read-fn)]
-         (if (= color-or-done :done)
-           (count painted)
-           (let [new-color  color-or-done
-                 rotation   (read-fn)
-                 direction' (rotate direction rotation)]
-             (recur (assoc panels current new-color)
-                    (move direction' current)
-                    (conj painted current)
-                    direction'))))))))
+   (-> (spawn-program (erlang/self) program)
+       (paint BLACK)
+       count)))
+
+;; Part Two
+
+(defn translate
+  [[x y] minx miny]
+  [(+ x minx)
+   (+ y miny)])
+
+(defn dimensions
+  [coords]
+  [(+ (- (reduce max (map first coords))
+         (reduce min (map first coords)))
+      1)
+   (+ (- (reduce max (map second coords))
+         (reduce min (map second coords)))
+      1)])
+
+(defn make-canvas
+  [w h]
+  (->> (repeat w " ")
+       vec
+       (repeat h)
+       vec))
+
+(defn render
+  [canvas]
+  (doseq [line canvas]
+    (println (apply str line))))
+
+(defn draw
+  [panels]
+  (let [coords (keys panels)
+        minx (->> (map first coords) (reduce min) erlang/abs)
+        miny (->> (map second coords) (reduce min) erlang/abs)
+        panels (reduce (fn [acc coord]
+                         (assoc acc (translate coord minx miny) (panels coord)))
+                       {}
+                       coords)
+        [w h] (dimensions coords)
+        canvas (make-canvas w h)]
+    (reduce (fn [canvas [x y]]
+              (assoc-in canvas
+                        [y x]
+                        (if (= (panels [x y]) BLACK) " " "#")))
+            canvas
+            (keys panels))))
+
+(defn part-two
+  ([] (-> (u/input-for-day 11)
+          input->program
+          part-two))
+  ([program]
+   (-> (spawn-program (erlang/self) program)
+       (paint WHITE)
+       draw
+       render)))
