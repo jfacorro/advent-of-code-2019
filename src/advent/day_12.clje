@@ -20,8 +20,6 @@
 
 (defn apply-gravity
   [{:keys [pos vel] :as moon} other-moons]
-  ;; (prn moon)
-  ;; (prn other-moons)
   (assoc moon :vel
          (->> other-moons
               (map #(gravity-pull moon %))
@@ -33,7 +31,6 @@
 
 (defn step
   [moons]
-  (prn moons)
   (let [moons (set moons)]
     (map #(-> %
               (apply-gravity (disj moons %))
@@ -41,8 +38,24 @@
          moons)))
 
 (defn energy
+  [x]
+  (->> x
+       (map erlang/abs.1)
+       (reduce +)))
+
+(defn total-energy
+  [{:keys [pos vel]}]
+  (*
+   ;; potential
+   (energy pos)
+   ;; kinetic
+   (energy vel)))
+
+(defn system-energy
   [moons]
-  moons)
+  (->> moons
+       (map total-energy)
+       (reduce +)))
 
 (defn input->moon
   [line]
@@ -65,4 +78,4 @@
   ([moons n]
    (-> (iterate step moons)
        (nth n)
-       #_energy)))
+       system-energy)))
