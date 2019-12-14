@@ -1,0 +1,76 @@
+(ns advent.day-13
+  (:require [advent.utils :as u]
+            [advent.day-5 :as day-5]
+            [clojure.string :as str]))
+
+;; -----------------------------------------------------------------------------
+;; Part One
+;; -----------------------------------------------------------------------------
+
+;; 0 is an empty tile. No game object appears in this tile.
+;; 1 is a wall tile. Walls are indestructible barriers.
+;; 2 is a block tile. Blocks can be broken by the ball.
+;; 3 is a horizontal paddle tile. The paddle is indestructible.
+;; 4 is a ball tile. The ball moves diagonally and bounces off objects.
+
+(def EMTPY  0)
+(def WALL   1)
+(def BLOCK  2)
+(def PADDLE 3)
+(def BALL   4)
+
+(defn read-fn []
+  (receive* #erl[:out x] x))
+
+(defn send-msg [pid x]
+  (erlang/send pid #erl[:out x]))
+
+(defn compute-program
+  [{:keys [parent program]}]
+  (day-5/with-write-fn #(send-msg parent %)
+    (day-5/with-read-fn read-fn
+      (day-5/compute program 0))))
+
+(defn run-program
+  [{:keys [parent] :as state}]
+  (compute-program state)
+  ;; Signal the program is done
+  (send-msg parent :done))
+
+(defn spawn-program
+  [parent program]
+  (erlang/spawn #(run-program {:parent parent
+                               :program program})))
+
+(defn receive-ouput
+  []
+  (loop [screen {}]
+    (let [out (read-fn)]
+      (if (= out :done)
+        screen
+        (let [x out
+              y (read-fn)
+              tile (read-fn)]
+          (recur (assoc screen [x y] tile)))))))
+
+(defn count-tiles
+  [screen tile]
+  (->> screen
+       (filter #(-> % second (= tile)))
+       count))
+
+(defn input->program
+  [input]
+  (mapv erlang/binary_to_integer.1
+        (-> input
+            first
+            (str/split ","))))
+
+(defn part-one
+  ([] (-> (u/input-for-day 13)
+          input->program
+          part-one))
+  ([program]
+   (spawn-program (erlang/self) program)
+   (-> (receive-ouput)
+       (count-tiles BLOCK))))
