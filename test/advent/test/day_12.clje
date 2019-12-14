@@ -1,0 +1,16 @@
+(ns advent.test.day-12
+  (:require [clojure.test :refer :all]
+            [advent.day-12 :refer :all]))
+
+(deftest step-10-times
+  (let [moons [(make-moon [-1 0 2]   [0 0 0])
+               (make-moon [2 -10 -7] [0 0 0])
+               (make-moon [4 -8 8]   [0 0 0])
+               (make-moon [3 5 -1]   [0 0 0])]
+        result (-> [(make-moon [2  1 -3] [-3 -2  1])
+                    (make-moon [1 -8  0] [-1  1  3])
+                    (make-moon [3 -6  1] [3   2 -3])
+                    (make-moon [2  0  4] [1  -1 -1])]
+                   set)]
+    (is (= result
+           (set (part-one moons 10))))))
