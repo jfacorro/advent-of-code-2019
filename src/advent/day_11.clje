@@ -56,13 +56,6 @@
     :down  [x (inc y)]
     :right [(inc x) y]))
 
-(defn input->program
-  [input]
-  (mapv erlang/binary_to_integer.1
-        (-> input
-            first
-            (str/split ","))))
-
 (defn paint
   [pid-program initial-color]
   (loop [panels  {}
@@ -79,6 +72,13 @@
           (recur (assoc panels current new-color)
                  (move direction' current)
                  direction'))))))
+
+(defn input->program
+  [input]
+  (mapv erlang/binary_to_integer.1
+        (-> input
+            first
+            (str/split ","))))
 
 (defn part-one
   ([] (-> (u/input-for-day 11)
