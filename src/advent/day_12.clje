@@ -79,3 +79,22 @@
    (-> (iterate step moons)
        (nth n)
        system-energy)))
+
+;; -----------------------------------------------------------------------------
+;; Part Two
+;; -----------------------------------------------------------------------------
+
+(defn part-two
+  ([] (-> (u/input-for-day 12)
+          input->moons
+          part-two))
+  ([moons]
+   (loop [moons moons
+          i 1
+          history (set [(set moons)])]
+     (let [moons' (set (step moons))]
+       (if (history moons')
+         i
+         (recur moons'
+                (inc i)
+                (conj history (set moons'))))))))
