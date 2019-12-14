@@ -1,0 +1,81 @@
+(ns advent.day-12
+  (:require [advent.utils :as u]
+            [clojure.string :as str]))
+
+;; -----------------------------------------------------------------------------
+;; Part One
+;; -----------------------------------------------------------------------------
+
+(defn make-moon [pos vel]
+  {:pos pos
+   :vel vel})
+
+(defn gravity-pull
+  [{a :pos} {b :pos}]
+  (mapv #(cond (< %1 %2) +1
+               (> %1 %2) -1
+               :else     0)
+        a
+        b))
+
+(defn apply-gravity
+  [{:keys [pos vel] :as moon} other-moons]
+  (assoc moon :vel
+         (->> other-moons
+              (map #(gravity-pull moon %))
+              (apply mapv + vel))))
+
+(defn apply-velocity
+  [{:keys [pos vel] :as moon}]
+  (assoc moon :pos (mapv + pos vel)))
+
+(defn step
+  [moons]
+  (let [moons (set moons)]
+    (map #(-> %
+              (apply-gravity (disj moons %))
+              (apply-velocity))
+         moons)))
+
+(defn energy
+  [x]
+  (->> x
+       (map erlang/abs.1)
+       (reduce +)))
+
+(defn total-energy
+  [{:keys [pos vel]}]
+  (*
+   ;; potential
+   (energy pos)
+   ;; kinetic
+   (energy vel)))
+
+(defn system-energy
+  [moons]
+  (->> moons
+       (map total-energy)
+       (reduce +)))
+
+(defn input->moon
+  [line]
+  (let [coords (-> line
+                   (str/replace #"(<|>)" "")
+                   (str/split #","))
+        pos    (->> coords
+                    (map #(str/replace % #" *?(x|y|z)=" ""))
+                    (mapv erlang/binary_to_integer.1))]
+    (make-moon pos [0 0 0])))
+
+(defn input->moons
+  [input]
+  (mapv input->moon input))
+
+(defn part-one
+  ([] (-> (u/input-for-day 12)
+          input->moons
+          (part-one 1000)))
+  ([moons n]
+   (-> (iterate step moons)
+       (nth n)
+       system-energy)))
