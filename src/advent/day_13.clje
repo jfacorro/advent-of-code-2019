@@ -22,21 +22,14 @@
 (defn read-msg []
   (receive* #erl[:out x] x))
 
-(defn read-char []
-  (try
-    (read)
-    (catch _ _
-        (read-char))))
-
 (defn send-msg [pid x]
   (erlang/send pid #erl[:out x]))
 
 (defn compute-program
   [{:keys [parent program]}]
-  (binding [*in* (new erlang.io.PushbackReader *in*)]
-    (day-5/with-write-fn #(send-msg parent %)
-      (day-5/with-read-fn read-char
-        (day-5/compute program 0)))))
+  (day-5/with-write-fn #(send-msg parent %)
+    (day-5/with-read-fn read-msg
+      (day-5/compute program 0))))
 
 (defn run-program
   [{:keys [parent] :as state}]
@@ -81,14 +74,7 @@
       (let [x out
             y (read-msg)
             tile-or-score (read-msg)]
-        (if (= [x y] [-1 0])
-          (let [game (assoc game :score tile-or-score)]
-            (render game)
-            (recur game))
-          (let [game (assoc-in game [:screen y x] tile-or-score)]
-            (when (and (:score game) (= tile-or-score BALL))
-              (render game))
-            (recur game)))))))
+        (recur (assoc-in game [:screen y x] tile-or-score))))))
 
 (defn count-tiles
   [{:keys [screen]} tile]
@@ -118,11 +104,41 @@
 ;; Part Two
 ;; -----------------------------------------------------------------------------
 
+(defn receive-ouput'
+  [pid game]
+  (let [out (read-msg)]
+    (if (= out :done)
+      game
+      (let [x out
+            y (read-msg)
+            tile-or-score (read-msg)]
+        (if (= [x y] [-1 0])
+          (let [game (assoc game :score tile-or-score)]
+            (render game)
+            (recur pid game))
+          (let [game (assoc-in game [:screen y x] tile-or-score)
+                game (condp = tile-or-score
+                       BALL   (assoc game :ball-x x)
+                       PADDLE (assoc game :paddle-x x)
+                       game)
+                ball-x (game :ball-x)
+                paddle-x (game :paddle-x)]
+            (when (= tile-or-score BALL)
+              (render game)
+              ;; Control the paddle
+              (send-msg pid
+                        (cond
+                          (= ball-x paddle-x) 0
+                          (< ball-x paddle-x) -1
+                          (> ball-x paddle-x) 1)))
+            (recur pid game)))))))
+
 (defn part-two
   ([] (-> (u/input-for-day 13)
           input->program
           part-two))
   ([program]
-   (spawn-program (erlang/self) (assoc program 0 2))
-   (receive-ouput (make-game))
-   nil))
+   (let [pid (spawn-program (erlang/self) (assoc program 0 2))]
+     (->> (make-game)
+          (receive-ouput' pid)
+          :score))))
