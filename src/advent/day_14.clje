@@ -1,0 +1,52 @@
+(ns advent.day-14
+  (:require [advent.utils :as u]
+            [clojure.string :as str]))
+
+;; -----------------------------------------------------------------------------
+;; Part One
+;; -----------------------------------------------------------------------------
+
+(defn parse-quantity-name
+  [s]
+  (let [[quantity name] (str/split s #" ")]
+    [name (erlang/binary_to_integer quantity)]))
+
+(defn line->reaction
+  [line]
+  (let [[input output] (str/split line #"=>")
+        input  (->> (str/split input #",")
+                    (map str/trim)
+                    (map parse-quantity-name)
+                    (reduce conj {}))
+        [name quantity] (-> (str/trim output)
+                            parse-quantity-name)]
+    {name {:quantity quantity
+           :input input}}))
+
+(defn quantity
+  [reactions name]
+  (if (= name "FUEL")
+    1
+    (->> reactions
+         (filter #(-> % second :input (get name)))
+         (reduce (fn [q [parent info]]
+                   (-> (quantity reactions parent)
+                       (/ (:quantity info))
+                       math/ceil
+                       (* (-> info :input (get name)))
+                       (+ q)))
+                 0)
+         erlang/trunc)))
+
+(defn input->reactions
+  [input]
+  (->> input
+       (map line->reaction)
+       (reduce merge {})))
+
+(defn part-one
+  ([] (-> (u/input-for-day 14)
+          input->reactions
+          part-one))
+  ([reactions]
+   (quantity reactions "ORE")))
