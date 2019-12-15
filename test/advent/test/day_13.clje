@@ -1,0 +1,6 @@
+(ns advent.test.day-13
+  (:require [clojure.test :refer :all]
+            [advent.day-13 :refer :all]))
+
+(deftest test-part-one
+  (is (= 213 (part-one))))

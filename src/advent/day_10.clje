@@ -152,7 +152,7 @@
 (defn part-two
   ([]
    (part-two (-> (u/input-for-day 10)
-                 input->map)
+                 input->map-chart)
              [13 17]
              200))
   ([map-chart from pos]
