@@ -151,13 +151,57 @@
           part-two))
   ([moons]
    (loop [moons moons
-          i 1
-          history (set [moons])]
+          i 1]
      (when (zero? (rem i 10000))
        (prn i))
      (let [moons' (step' moons)]
-       (if (history moons')
+       (if (= moons moons')
          i
-         (recur moons'
-                (inc i)
-                (conj history moons')))))))
+         (recur moons' (inc i)))))))
+
+(defn check-initial-values
+  [moons moons' axis]
+  (->> (map vector moons moons')
+       (every? (fn [[[posa vela] [posb velb]]]
+                 (and (= (erlang/element axis posa)
+                         (erlang/element axis posb))
+                      (= (erlang/element axis vela)
+                         (erlang/element axis velb)))))))
+
+(defn gcd
+      [a b]
+      (if (zero? b)
+      a
+      (recur b, (mod a b))))
+
+(defn lcm
+      [a b]
+      (/ (* a b) (gcd a b)))
+
+(defn lcmv [& v] (reduce lcm v))
+
+(defn part-two
+  ([] (-> (u/input-for-day 12)
+          input->moons'
+          part-two))
+  ([moons-0]
+   (loop [moons moons-0
+          i 1
+          periods {}]
+     (when (zero? (rem i 10000))
+       (prn i))
+     (if (= 3 (count periods))
+       (->> (vals periods)
+            (apply lcmv)
+            erlang/trunc)
+       (let [moons'   (step' moons)
+             periods' (reduce (fn [periods axis]
+                                (if (and (not (periods axis))
+                                         (check-initial-values moons-0
+                                                               moons'
+                                                               axis))
+                                  (assoc periods axis i)
+                                  periods))
+                              periods
+                              [1 2 3])]
+         (recur moons' (inc i) periods'))))))
