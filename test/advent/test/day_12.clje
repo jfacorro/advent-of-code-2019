@@ -16,8 +16,6 @@
            (set (-> (iterate step moons)
                     (nth 10)))))))
 
-
-
 (deftest calculate-system-energy
   (are [moons n result] (= result (part-one moons n))
     [(make-moon [-1 0 2]   [0 0 0])
@@ -33,3 +31,18 @@
      (make-moon [9  -8 -3 ] [0 0 0])]
     100
     1940))
+
+(deftest test-part-two
+  (are [moons result] (= result (part-two moons))
+    #erl((make-moon' [-1  0   2] [0 0 0])
+         (make-moon' [2  -10 -7] [0 0 0])
+         (make-moon' [4  -8   8] [0 0 0])
+         (make-moon' [3   5  -1] [0 0 0]))
+    2772
+
+    #erl((make-moon' [-8 -10 0 ] [0 0 0])
+         (make-moon' [ 5  5  10] [0 0 0])
+         (make-moon' [2  -7  3 ] [0 0 0])
+         (make-moon' [9  -8 -3 ] [0 0 0]))
+    4686774924
+    ))
