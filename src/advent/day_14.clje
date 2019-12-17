@@ -2,6 +2,9 @@
   (:require [advent.utils :as u]
             [clojure.string :as str]))
 
+;; The solutions to this day is an implementation in Clojure of the solutions
+;; found here: https://github.com/gboyegadada/algos/blob/master/AoC19/day14.py
+
 ;; -----------------------------------------------------------------------------
 ;; Part One
 ;; -----------------------------------------------------------------------------
@@ -24,13 +27,13 @@
            :input input}}))
 
 (defn quantity
-  [reactions name]
+  [reactions name fuel]
   (if (= name "FUEL")
-    1
+    fuel
     (->> reactions
          (filter #(-> % second :input (get name)))
          (reduce (fn [q [parent info]]
-                   (-> (quantity reactions parent)
+                   (-> (quantity reactions parent fuel)
                        (/ (:quantity info))
                        math/ceil
                        (* (-> info :input (get name)))
@@ -50,3 +53,24 @@
           part-one))
   ([reactions]
    (quantity reactions "ORE")))
+
+;; -----------------------------------------------------------------------------
+;; Part Two
+;; -----------------------------------------------------------------------------
+
+(def trillion 1000000000000)
+
+(defn part-two
+  ([] (-> (u/input-for-day 14)
+          input->reactions
+          part-two))
+  ([reactions]
+   (loop [lower 1
+          higher trillion]
+     (if (>= 1 (- higher lower))
+       lower
+       (let [middle (erlang/div (+ lower higher) 2)
+             q (quantity reactions "ORE" middle)]
+         (if (<= q trillion)
+           (recur middle higher)
+           (recur lower middle)))))))
